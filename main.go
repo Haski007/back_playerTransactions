@@ -1,34 +1,52 @@
 package main
 
-// import "gopkg.in/macaron.v1"
 import (
-	"html/template"
+	"strconv"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"log"
-	// "fmt"
+	"fmt"
 )
 
 /*
 **	Structures
 */
-type User struct {
-	Id			int
-	Balance		float64
-	Token		string
 
+type account struct {
+	DepositID		uint64 `json:"depositid"`
+	transactionTime	string
+	OldBalance		float64
+	DpositAmount	float64 `json:"amount"`
+	Token			string `json:"testtask"`
+	
+
+	// user
 }
 
-// func (u user) createUser(id int, balance float64, token string) {
-// 	u.id = id
-// 	u.balance = balance
-// 	u.token = token
-// }
-var GusersCounter int
-var GreportCounter int
+type user struct {
+	ID				uint64 `json:"id"`
+	Balance			float64 `json:"balance"`
+	DepositCount	int
+	DepositSum		float64
+	BetCount		int
+	betSum			float64
+	WinCoun			int
+	WinSum			float64
+	Token			string `json:"testtask"`
+	account
+}
+
+/*
+**	Code
+*/
+
+var usersMap = map[uint64]*user{}
 
 func	main() {
-	http.HandleFunc("/", mainPage)
-	http.HandleFunc("/users", userPage)
+	http.HandleFunc("/user/create", adduser)
+	http.HandleFunc("/user/get", getUser)
+	http.HandleFunc("/user/deposit", addDeposit)
 
 	port := ":8080"
 	err := http.ListenAndServe(port, nil)
@@ -37,50 +55,64 @@ func	main() {
 	}
 }
 
-func 	userPage(w http.ResponseWriter, r *http.Request) {
-	// u := []user{
-	// 	id: 1,
-	// 	balance: 10.2,
-	// 	token: "Sobaka",
-	// }
-	users := []User{User{1, 10.2, "Hren"}, User{2, 22.3, "Ssanina"}}
-	GusersCounter++
-	tmpl, err := template.ParseFiles("static/users.html")
-	if (err != nil) {
+func addDeposit(w http.ResponseWriter, r *http.Request) {
+	bytes, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	// fmt.Println(users)
-	if err := tmpl.Execute(w, users); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
+	var dat map[string]interface{}
+
+	json.Unmarshal(bytes, &dat)
+	tmp := fmt.Sprintf("%v", dat["id"])
+	id, _ := strconv.ParseUint(tmp, 10, 64)
+	usr := usersMap[id]
+	usr.OldBalance = usr.Balance
+	da := fmt.Sprintf("%v", dat["amount"])
+	fmt.Println(da)
+	amount, _ := strconv.ParseFloat(fmt.Sprintf("%v", dat["amount"]), 64)
+	usr.Balance += amount
+	did, _ := strconv.ParseUint(fmt.Sprintf("%v", dat["depositid"]), 10, 64)
+	usr.DepositID = did
 }
 
-func	mainPage(w http.ResponseWriter, r *http.Request) {
-	GusersCounter++
-	tmpl, err := template.ParseFiles("static/index.html")
-	if (err != nil) {
+func getUser(w http.ResponseWriter, r *http.Request) {
+	bytes, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	if err := tmpl.Execute(w, nil); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
+	var dat map[string]interface{}
+
+	json.Unmarshal(bytes, &dat)
+	tmp := fmt.Sprintf("%v", dat["id"])
+	id, _ := strconv.ParseUint(tmp, 10, 64)
+	res, _ := json.Marshal(usersMap[id])
+	fmt.Println(string(res))
 }
 
+func adduser(w http.ResponseWriter, r *http.Request) {
+	var u user
+	bytes, err := ioutil.ReadAll(r.Body)
 
-// func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Println("We got a request on /users")
-// 	GreportCounter++
-// 	str := fmt.Sprintf("/reports API call count: %v", GreportCounter)
-// 	fmt.Fprint(w, str)
-// }
-
-// func usersHandleFunc(w http.ResponseWriter, r *http.Request) {
-	// 	fmt.Println("We got a request on /users")
-	// 	GusersCounter++
-	// 	str := fmt.Sprintf(GusersApiResp, r.Method, GusersCounter)
-	// 	fmt.Fprint(w, str)
-	// }
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	fmt.Println(string(bytes))
+	err = json.Unmarshal(bytes, &u)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if usersMap[u.ID] != nil {
+		fmt.Println("user with such id already exists!")
+	} else {
+		usersMap[u.ID] = &u
+		for _ , v := range usersMap {
+			fmt.Printf( "id = %2d\nbalance = %2.2f\ntoken = %2v\n", v.ID, v.Balance, v.Token)
+		}
+	}
+}

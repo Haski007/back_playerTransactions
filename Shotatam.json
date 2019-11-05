@@ -1,0 +1,5 @@
+curl -X POST --data "{\"id\":8,\"balance\":55.5,\"testtask\":\"token4\"}" http://localhost:8080/user/create
+
+curl -X POST --data "{\"id\":8,\"testtask\":\"token4\"}" http://localhost:8080/user/get
+
+curl -X POST --data "{\"id\":8,\"amount\":50.50,\"depositid\":1209,\"testtask\":\"token4\"}" http://localhost:8080/user/deposit

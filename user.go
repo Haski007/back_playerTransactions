@@ -1,15 +1,33 @@
+package main
+
+import (
+	"fmt"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+)
+
+/*
+**	Structures
+*/
+
 type user struct {
 	ID           uint64  `json:"id"`
 	Balance      float64 `json:"balance"`
 	DepositCount int
-	Token        string `json:"token"`
+	DepositSum   float64
+	BetCount     int
+	BetSum       float64
+	WinCount     int
+	WinSum       float64
+	Token        string  `json:"token"`
 }
+
+var usersMap = map[uint64]*user{}
 
 /*
 **	Code
 */
-
-var usersMap = map[uint64]*user{}
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -46,14 +64,17 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if u.Token != TokenFromConfig {
+		fmt.Println("invalid token")
 		w.Write([]byte(`{"error" : "invalid token"}`))
 		return
 	}
 
 	if _, ok := usersMap[u.ID]; ok {
+		fmt.Println("user already exist")
 		w.Write([]byte(`{"error": "user already exist"}`))
 		return
 	} else {
+		fmt.Println(string(bytes))
 		usersMap[u.ID] = &u
 		w.Write([]byte(`{"error" : ""}`))
 

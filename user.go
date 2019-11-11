@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"github.com/globalsign/mgo/bson"
 )
 
 /*
@@ -12,15 +13,15 @@ import (
 */
 
 type user struct {
-	ID           uint64  `json:"id"`
-	Balance      float64 `json:"balance"`
-	DepositCount int
-	DepositSum   float64
-	BetCount     int
-	BetSum       float64
-	WinCount     int
-	WinSum       float64
-	Token        string  `json:"token"`
+	ID           uint64  `json:"id" bson:"_id,omitempty"`
+	Balance      float64 `json:"balance" bson:"balance"`
+	DepositCount int	`bson:"depositcount"`
+	DepositSum   float64	`bson:"depositsum"`
+	BetCount     int	`bson:"betcount"`
+	BetSum       float64	`bson:"betsum"`
+	WinCount     int	`bson:"wincount"`
+	WinSum       float64 `bson:"winsum"`
+	Token        string  `json:"token" bson:"token"`
 }
 
 var usersMap = map[uint64]*user{}
@@ -31,16 +32,19 @@ var usersMap = map[uint64]*user{}
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	bytes, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	var dat user
 
-	json.Unmarshal(bytes, &dat)
+	var data user
+	var zalupa	user
 
-	res, err := json.Marshal(usersMap[dat.ID])
+	json.Unmarshal(bytes, &data)
+
+	usersCollection.FindId(bson.ObjectId(8)).One(&zalupa)
+	fmt.Println(zalupa.Balance)
+	res, err := json.Marshal(usersCollection.FindId(data.ID))
 	if err != nil {
 		w.Write([]byte(`{"error" :` + err.Error() + `}`))
 		return
@@ -69,13 +73,18 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// usr := user{ID, Balance, DepositCount, DepositSum, BetCount, BetSum, WinCount, WinSum, Token}
+	// id := r.FormValue("id")
+	// token := r.FormValue("Token")
 	if _, ok := usersMap[u.ID]; ok {
 		fmt.Println("user already exist")
 		w.Write([]byte(`{"error": "user already exist"}`))
+		usersCollection.UpdateId(u.ID, u)
 		return
 	} else {
 		fmt.Println(string(bytes))
-		usersMap[u.ID] = &u
+		usersCollection.UpdateId(u.ID, u)
+		usersCollection.Insert(u)
 		w.Write([]byte(`{"error" : ""}`))
 
 	}

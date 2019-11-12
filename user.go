@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/globalsign/mgo"
 	"fmt"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"github.com/globalsign/mgo/bson"
+	// "github.com/globalsign/mgo/bson"
 )
 
 /*
@@ -24,7 +25,10 @@ type user struct {
 	Token        string  `json:"token" bson:"token"`
 }
 
-var usersMap = map[uint64]*user{}
+// var usersMap = map[uint64]*user{}
+
+var usersCollection *mgo.Collection
+
 
 /*
 **	Code
@@ -37,18 +41,27 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data user
-	var zalupa	user
+	var inputData user
+	var	resData user
 
-	json.Unmarshal(bytes, &data)
-
-	usersCollection.FindId(bson.ObjectId(8)).One(&zalupa)
-	fmt.Println(zalupa.Balance)
-	res, err := json.Marshal(usersCollection.FindId(data.ID))
+	err = json.Unmarshal(bytes, &inputData)
 	if err != nil {
 		w.Write([]byte(`{"error" :` + err.Error() + `}`))
 		return
 	}
+
+	err = usersCollection.FindId(inputData.ID).One(&resData)
+	if err != nil {
+		w.Write([]byte(`{"error" :` + err.Error() + `}`))
+		return
+	}
+	
+	res, err := json.Marshal(resData)
+	if err != nil {
+		w.Write([]byte(`{"error" :` + err.Error() + `}`))
+		return
+	}
+
 	w.Write([]byte(res))
 }
 
@@ -73,19 +86,21 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// usr := user{ID, Balance, DepositCount, DepositSum, BetCount, BetSum, WinCount, WinSum, Token}
-	// id := r.FormValue("id")
-	// token := r.FormValue("Token")
-	if _, ok := usersMap[u.ID]; ok {
+	var	test user
+	if  err = usersCollection.FindId(u.ID).One(&test); err == nil {
 		fmt.Println("user already exist")
 		w.Write([]byte(`{"error": "user already exist"}`))
 		usersCollection.UpdateId(u.ID, u)
 		return
 	} else {
-		fmt.Println(string(bytes))
-		usersCollection.UpdateId(u.ID, u)
-		usersCollection.Insert(u)
-		w.Write([]byte(`{"error" : ""}`))
+		fmt.Println("Created user: ", string(bytes))
 
+		err = usersCollection.Insert(u)
+		if err != nil {
+			w.Write([]byte(`{"error" :` + err.Error() + `}`))
+			return
+		}
+
+		w.Write([]byte(`{"error" : ""}`))
 	}
 }

@@ -25,10 +25,10 @@ var usersDepositMap = map[uint64][]deposit{}
 **	Code
 */
 
-func getOldBalance(userId uint64) float64 {
+func getOldBalance(UserID uint64) float64 {
 	var oldBalance float64
 
-	deposits, ok := usersDepositMap[userId]
+	deposits, ok := usersDepositMap[UserID]
 	if !ok {
 		return oldBalance
 	}
@@ -50,10 +50,11 @@ func addDeposit(w http.ResponseWriter, r *http.Request) {
 	var data deposit
 
 	json.Unmarshal(bytes, &data)
-	usr, ok := usersMap[data.UserID]
-	if !ok {
+	var usr user
+	err = usersCollection.FindId(data.UserID).One(&usr)
+	if err != nil {
 		fmt.Println("there aren't such user")
-		w.Write([]byte(`{"error" :` + "there aren't such user" + `}`))
+		w.Write([]byte(`{"error" :` + err.Error() + `}`))
 		return
 	}
 	usr.DepositSum += data.Amount
@@ -61,6 +62,7 @@ func addDeposit(w http.ResponseWriter, r *http.Request) {
 	usr.Balance += getOldBalance(data.UserID) + data.Amount
 	deposits := usersDepositMap[usr.ID]
 	usersDepositMap[usr.ID] = append(deposits, data)
+	usersCollection.UpsertId(usr.ID, usr)
 	fmt.Println(string(bytes))
 	w.Write([]byte(fmt.Sprintf("{\"error\" : \"\", \"balance\" : %f}", usr.Balance)))
 }

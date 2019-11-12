@@ -10,9 +10,6 @@ import (
 var TokenFromConfig = "testtask"
 
 
-var usersCollection *mgo.Collection
-
-
 func main() {
 	session, err := mgo.Dial("localhost")
 	if err != nil {

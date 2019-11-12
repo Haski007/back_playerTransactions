@@ -4,5 +4,6 @@ curl -X POST --data "{\"id\":8,\"token\":\"testtask\"}" http://localhost:8080/us
 
 curl -X POST --data "{\"userid\":8,\"amount\":10022.50,\"depositid\":1209,\"token\":\"testtask\"}" http://localhost:8080/user/deposit
 
-curl -X POST --data "{\"userid\":8,\"type\":\"Win\", \"transactionid\":5010, \"amount\":5000, \"token\":\"testtask\"}" http://localhost:8080/transaction
+curl -X POST --data "{\"userid\":8,\"type\":\"Win\", \"transactionid\":5010, \"amount\":5000, \"token\":\"testtask\"}" http://localhost:8080/transaction 		// Win request
 
+curl -X POST --data "{\"userid\":8,\"type\":\"Bet\", \"transactionid\":587, \"amount\":5000, \"token\":\"testtask\"}" http://localhost:8080/transaction 		// Bet request

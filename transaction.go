@@ -1,8 +1,8 @@
 package main
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,7 +11,7 @@ import (
 
 /*
 **	Structures
-*/
+ */
 
 type transaction struct {
 	TransactionID uint64          `json:"transactionId"`
@@ -32,8 +32,7 @@ const (
 
 /*
 **	Code
-*/
-
+ */
 
 func makeTransaction(w http.ResponseWriter, r *http.Request) {
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -68,8 +67,10 @@ func MakeBet(data transaction) (float64, error) {
 		return 0, errors.New("invalid amount")
 	}
 
-	usr, ok := usersMap[data.UserID]
-	if !ok {
+	var usr user
+	err := usersCollection.FindId(data.UserID).One(&usr)
+	if err != nil {
+		fmt.Println("there aren't such user")
 		return 0, errors.New("there aren't such user")
 	}
 	if usr.Balance < data.Amount {
@@ -80,18 +81,22 @@ func MakeBet(data transaction) (float64, error) {
 	usersTransactionsMap[usr.ID] = append(usersTransactionsMap[usr.ID], data)
 	usr.BetSum += data.Amount
 	usr.BetCount++
+	usersCollection.UpsertId(usr.ID, usr)
 	return usr.Balance, nil
 }
 
 func MakeWin(data transaction) (float64, error) {
-	usr, ok := usersMap[data.UserID]
-	if !ok {
+	var usr user
+	err := usersCollection.FindId(data.UserID).One(&usr)
+	if err != nil {
+		fmt.Println("there aren't such user")
 		return 0, errors.New("there aren't such user")
 	}
 
 	usr.Balance += data.Amount
 	usersTransactionsMap[usr.ID] = append(usersTransactionsMap[usr.ID], data)
-	usr.WinSum += data.Amount	
+	usr.WinSum += data.Amount
 	usr.WinCount++
+	usersCollection.UpsertId(usr.ID, usr)
 	return usr.Balance, nil
 }
